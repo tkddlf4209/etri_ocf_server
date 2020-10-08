@@ -31,6 +31,7 @@ ocf_light_files = [
     'jsoncpp.cpp',
     'HumiResource.cpp',
     'TempResource.cpp',
+    'BinarySwitchResource.cpp',
     'Platform.cpp',
 ]
 

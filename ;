@@ -89,27 +89,14 @@ const  std::string KEY_URI ="uri";
 TempResource t;
 HumiResource h;
 BinarySwitchResource b;
-void sendMsg(Json::Value value, long dst_pid);
+void sendMsg(Json::Value value, long dst_pid)
 
 void callback_entityHandler(std::shared_ptr<OC::OCResourceRequest> request){
 
     if (request->getRequestType() == "POST"){
 	if(request -> getResourceUri().compare("/binaryswitch") ==0 ){
-	    Json::Value req;
-	    Json::Value data;
 
-	    if (request->getResourceRepresentation().hasAttribute("value")){
-		bool value;
-		request->getResourceRepresentation().getValue("value", value);
-
-		data["value"] = value;
-	    }
-           
-	    req["req_type"] = POST_REQ;
-	    req[request->getResourceUri()] = data ;
-
-	    //std::cout << "@@@@@@@@@@@ : " <<req << std::endl;
-	    sendMsg(req,PID_AGENT);
+	    
 	}
     }
 
@@ -222,7 +209,7 @@ void * recv_queue(void * arg){
 
 
 		    }else if(req_type.compare(POST_RSP) == 0){
-			std::cout << "POST_RSP " << value << std::endl;
+		    
 		    }
 		
 		}

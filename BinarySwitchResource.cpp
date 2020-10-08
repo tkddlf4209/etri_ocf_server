@@ -21,8 +21,10 @@
  */
 
 #include <iostream>
+#include <vector>
+#include <thread>
 
-#include "HumiResource.h"
+#include "BinarySwitchResource.h"
 #include "OCPlatform.h"
 
 #define INTERFACE_KEY "if"
@@ -30,60 +32,59 @@
 using namespace OC;
 namespace PH = std::placeholders;
 
-HumiResource::HumiResource(std::string resourceUri):
+BinarySwitchResource::BinarySwitchResource(std::string resourceUri):
         m_interestedObservers{},
-        m_var_value_humi{0},
-        m_var_value_ds_humi{0},
+        m_var_value_rt{},
         m_var_value_n{},
         m_var_value_if{},
-        m_var_value_rt{}
+        m_var_value_value{}
 {
-    std::cout << "Running: HumiResource constructor" << std::endl;
+    std::cout << "Running: BinarySwitchResource constructor" << std::endl;
 
     // VS2013 will fail list initialization so use array initialization
     m_resourceUri = resourceUri;
-    m_RESOURCE_TYPE[0] = "oic.r.humidity";
+    m_RESOURCE_TYPE[0] = "oic.r.switch.binary";
     m_RESOURCE_TYPE[1] = "oic.r.agent";
     m_RESOURCE_INTERFACE[0] = "oic.if.baseline";
     m_RESOURCE_INTERFACE[1] = "oic.if.a";
-    m_IF_UPDATE[0] = "oic.if.baseline";
-    m_IF_UPDATE[1] = "oic.if.a";
-    m_var_name_ds_humi ="desiredHumidity";
-    m_var_name_humi = "humidity";
+    m_IF_UPDATE[0] = "oic.if.a";
+    //m_IF_UPDATE[1] = "oic.if.rw";
+    m_IF_UPDATE[1] = "oic.if.baseline";
+    m_var_name_rt = "rt";
     m_var_name_n = "n";
     m_var_name_if = "if";
-    m_var_name_rt = "rt";
+    m_var_name_value = "value";
 
-    // initialize member variables /dimming
-    m_var_value_humi = 0;
-    m_var_value_ds_humi =0; 
+    // initialize member variables /binaryswitch
+    // initialize vector rt
+    m_var_value_rt.push_back("oic.r.switch.binary");
     m_var_value_n = "";  // current value of property "n"
     // initialize vector if
     m_var_value_if.push_back("oic.if.baseline");
     m_var_value_if.push_back("oic.if.a");
-    // initialize vector rt
-    m_var_value_rt.push_back("oic.r.humidity");
+
+    m_var_value_value = false; // current value of property "value"
 }
 
-HumiResource::~HumiResource(void) { }
+BinarySwitchResource::~BinarySwitchResource(void) { }
 
-OCStackResult HumiResource::registerResource(uint8_t resourceProperty)
+OCStackResult BinarySwitchResource::registerResource(uint8_t resourceProperty)
 {
-    EntityHandler cb = std::bind(&HumiResource::entityHandler, this, PH::_1);
+    EntityHandler cb = std::bind(&BinarySwitchResource::entityHandler, this, PH::_1);
     OCStackResult result = OC_STACK_ERROR;
     result = OCPlatform::registerResource(m_resourceHandle,
                                           m_resourceUri,
                                           m_RESOURCE_TYPE[0],
                                           m_RESOURCE_INTERFACE[0],
                                           cb,
-                                          resourceProperty);
+                                          resourceProperty );
     if (OC_STACK_OK != result)
     {
         std::cerr << "Failed to register BinarySwitchResoruce." << std::endl;
         return result;
     }
 
-    /// add the additional resource types
+    // add the additional resource types
     for( size_t a = 1; a < (sizeof(m_RESOURCE_TYPE)/sizeof(m_RESOURCE_TYPE[0])); a++ )
     {
         result = OCPlatform::bindTypeToResource(m_resourceHandle, m_RESOURCE_TYPE[a].c_str());
@@ -105,7 +106,7 @@ OCStackResult HumiResource::registerResource(uint8_t resourceProperty)
         }
     }
 
-    std::cout << "HumiResource:" << std::endl;
+    std::cout << "BinarySwitchResource:" << std::endl;
     std::cout << "\t" << "# resource interfaces: "
               << (sizeof(m_RESOURCE_INTERFACE)/sizeof(m_RESOURCE_INTERFACE[0])) << std::endl;
     std::cout << "\t" << "# resource types     : "
@@ -114,24 +115,22 @@ OCStackResult HumiResource::registerResource(uint8_t resourceProperty)
     return result;
 }
 
-int HumiResource::getHumi(void)
+bool BinarySwitchResource::getValue(void)
 {
-    return m_var_value_humi;
+    return m_var_value_value;
 }
 
-void HumiResource::setHumi(int humi)
+void BinarySwitchResource::setValue(bool newValue)
 {
-  
-        m_var_value_humi = humi;
-        std::cout << "\t\t" << "property 'humidity': " << m_var_value_humi << std::endl;
-    
+    m_var_value_value  = newValue;
+    std::cout << "\t\t" << "property 'value': " << m_var_value_value << std::endl;
 }
 
-OCStackResult HumiResource::sendNotification(void)
+OCStackResult BinarySwitchResource::sendNotification(void)
 {
     OCStackResult sResult = OC_STACK_OK;
     if ( m_interestedObservers.size() > 0) {
-        std::cout << "Notifying list"  << m_interestedObservers.size() << " of observers\n";
+        std::cout << "Notifying list "  << m_interestedObservers.size() << " of observers\n";
         auto pResponse = std::make_shared<OC::OCResourceResponse>();
         sResult = OCPlatform::notifyListOfObservers(m_resourceHandle,
                                                     m_interestedObservers,
@@ -140,63 +139,82 @@ OCStackResult HumiResource::sendNotification(void)
     return sResult;
 }
 
-
-OC::OCRepresentation HumiResource::get(OC::QueryParamsMap queries)
+OC::OCRepresentation BinarySwitchResource::get(OC::QueryParamsMap queries)
 {
     OC_UNUSED(queries);
 
-    m_rep.setValue(m_var_name_humi, m_var_value_humi );
-    m_rep.setValue(m_var_name_ds_humi,m_var_value_ds_humi);
-    // m_rep.setValue(m_var_name_n, m_var_value_n );
-    m_rep.setValue(m_var_name_if,  m_var_value_if );
     m_rep.setValue(m_var_name_rt,  m_var_value_rt );
+    //m_rep.setValue(m_var_name_n, m_var_value_n );
+    m_rep.setValue(m_var_name_if,  m_var_value_if );
+    m_rep.setValue(m_var_name_value, m_var_value_value );
 
     return m_rep;
 }
 
-OCEntityHandlerResult HumiResource::post(OC::QueryParamsMap queries, const OC::OCRepresentation& rep)
+OCEntityHandlerResult BinarySwitchResource::post(OC::QueryParamsMap queries, const OC::OCRepresentation& rep)
 {
     OCEntityHandlerResult ehResult = OC_EH_OK;
     OC_UNUSED(queries);
 
+    try {
+        if (rep.hasAttribute(m_var_name_value))
+        {
+            // value exist in payload
+
+        }
+    }
+    catch (std::exception& e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+
     if (ehResult == OC_EH_OK)
     {
         // no error: assign the variables
-       /* 
-       	try {
-            // value exist in payload
-            if (rep.getValue(m_var_name_humi, m_var_value_humi ))
+        try {
+            if (rep.hasAttribute(m_var_name_rt))
             {
-                std::cout << "\t\t" << "property 'humidity': " << m_var_value_humi << std::endl;
+                rep.getValue(m_var_name_rt, m_var_value_rt);
+                int first = 1;
+                std::cout << "\t\t" << "property 'rt' : " ;
+                for(auto myvar: m_var_value_rt)
+                {
+                    if (first)
+                    {
+                        std::cout << myvar;
+                        first = 0;
+                    }
+                    else
+                    {
+                        std::cout << "," << myvar;
+                    }
+                }
+                std::cout <<  std::endl;
             }
             else
             {
-                std::cout << "\t\t" << "property 'humidity' not found in the representation" << std::endl;
+                std::cout << "\t\t" << "property 'rt' not found in the representation" << std::endl;
             }
         }
         catch (std::exception& e)
         {
             std::cout << e.what() << std::endl;
         }
-	*/
-	try {
-            // value exist in payload
-            if (rep.hasAttribute(m_var_name_ds_humi) && rep.getValue(m_var_name_ds_humi, m_var_value_ds_humi ))
+
+        try {
+            if (rep.getValue(m_var_name_n, m_var_value_n ))
             {
-                std::cout << "\t\t" << "property 'ds_humidity': " << m_var_value_ds_humi << std::endl;
+                std::cout << "\t\t" << "property 'n' : " << m_var_value_n << std::endl;
             }
             else
             {
-                std::cout << "\t\t" << "property 'ds_humidity' not found in the representation" << std::endl;
+                std::cout << "\t\t" << "property 'n' not found in the representation" << std::endl;
             }
         }
-
-
         catch (std::exception& e)
         {
             std::cout << e.what() << std::endl;
         }
-	
 
         try {
             if (rep.hasAttribute(m_var_name_if))
@@ -229,47 +247,30 @@ OCEntityHandlerResult HumiResource::post(OC::QueryParamsMap queries, const OC::O
         }
 
         try {
-            if (rep.hasAttribute(m_var_name_rt))
+            if (rep.getValue(m_var_name_value, m_var_value_value ))
             {
-                rep.getValue(m_var_name_rt, m_var_value_rt);
-                int first = 1;
-                std::cout << "\t\t" << "property 'rt' : " ;
-                for(auto myvar: m_var_value_rt)
-                {
-                    if (first)
-                    {
-                        std::cout << myvar;
-                        first = 0;
-                    }
-                    else
-                    {
-                        std::cout << "," << myvar;
-                    }
-                }
-                std::cout <<  std::endl;
+                std::cout << "\t\t" << "property 'value': " << m_var_value_value << std::endl;
             }
             else
             {
-                std::cout << "\t\t" << "property 'rt' not found in the representation" << std::endl;
+                std::cout << "\t\t" << "property 'value' not found in the representation" << std::endl;
             }
         }
         catch (std::exception& e)
         {
             std::cout << e.what() << std::endl;
         }
-	
     }
-
     return ehResult;
 }
 
-OCEntityHandlerResult HumiResource::entityHandler(std::shared_ptr<OC::OCResourceRequest> request)
+OCEntityHandlerResult BinarySwitchResource::entityHandler(std::shared_ptr<OC::OCResourceRequest> request)
 {
     OCEntityHandlerResult ehResult = OC_EH_ERROR;
 
     if (request)
     {
-        std::cout << "In entity handler for HumiResource, URI is : "
+        std::cout << "In entity handler for BinarySwitchResource, URI is : "
                 << request->getResourceUri() << std::endl;
 
         // Check for query params (if any)
@@ -282,11 +283,7 @@ OCEntityHandlerResult HumiResource::entityHandler(std::shared_ptr<OC::OCResource
         {
             std::cout << "Query key: " << it.first << " value : " << it.second
                     << std::endl;
-
-
         }
-
-
         // get the value, so that we can AND it to check which flags are set
         int requestFlag = request->getRequestHandlerFlag();
 
@@ -299,7 +296,7 @@ OCEntityHandlerResult HumiResource::entityHandler(std::shared_ptr<OC::OCResource
 
             if (request->getRequestType() == "GET")
             {
-                std::cout<<"HumiResource Get Request"<< std::endl;
+                std::cout<<"BinarySwitchResource Get Request"<< std::endl;
 
                 pResponse->setResourceRepresentation(get(queries), "");
                 if (OC_STACK_OK == OCPlatform::sendResponse(pResponse))
@@ -307,38 +304,61 @@ OCEntityHandlerResult HumiResource::entityHandler(std::shared_ptr<OC::OCResource
                     ehResult = OC_EH_OK;
                 }
             }
-	
+
             else if (request->getRequestType() == "POST")
             {
-		    std::cout <<"HumiResource Post Request"<<std::endl;
-		    try {
-			
-			//ehResult = post(queries, request->getResourceRepresentation());
-			ehResult = OC_EH_OK;
-			if (request->getResourceRepresentation().hasAttribute(m_var_name_humi)) 
-			{
-                             pResponse->setResponseResult(OCEntityHandlerResult::OC_EH_FORBIDDEN);
-			}
-			pResponse->setResourceRepresentation(get(queries), "");
-		    }
-		    catch (std::exception& e)
-		    {
-			 std::cout << e.what() << std::endl;
-		    }
-		    
-		    if (OC_STACK_OK == OCPlatform::sendResponse(pResponse))
-		    {
-			    if (OC_STACK_OK != sendNotification() )
-			    {
-				std::cerr << "NOTIFY failed." << std::endl;
-			    }
-		    }
+      
+		//**********************************
+		callback_entityHandler(request);
+		//**********************************
+      		
+		std::cout <<"BinarySwitchResource Post Request"<<std::endl;
+                bool  handle_post = true;
+
+                if (queries.size() > 0)
+                {
+                    for (const auto &eachQuery : queries)
+                    {
+                        std::string key = eachQuery.first;
+                        if (key.compare(INTERFACE_KEY) == 0)
+                        {
+                            std::string value = eachQuery.second;
+                            if (in_updatable_interfaces(value) == false)
+                            {
+                                std::cout << "Update request received via interface: " << value
+                                        << " . This interface is not authorized to update resource!!" << std::endl;
+                                pResponse->setResponseResult(OCEntityHandlerResult::OC_EH_FORBIDDEN);
+                                handle_post = false;
+                                ehResult = OC_EH_ERROR;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (handle_post)
+                {
+                    ehResult = post(queries, request->getResourceRepresentation());
+                    //ehResult = OC_EH_OK;
+                    if (ehResult == OC_EH_OK)
+                    {
+                        pResponse->setResourceRepresentation(get(queries), "");
+                    }
+                    else
+                    {
+                        pResponse->setResponseResult(OCEntityHandlerResult::OC_EH_ERROR);
+                    }
+                    if (OC_STACK_OK == OCPlatform::sendResponse(pResponse))
+                    {
+                        if (OC_STACK_OK != sendNotification() )
+                        {
+                            std::cerr << "NOTIFY failed." << std::endl;
+                        }
+                    }
+                }
             }
-	    
-	    
             else
             {
-                std::cout << "HumiResource unsupported request type (delete,put,..)"
+                std::cout << "BinarySwitchResource unsupported request type (delete,put,..)"
                         << request->getRequestType() << std::endl;
                 pResponse->setResponseResult(OC_EH_ERROR);
                 OCPlatform::sendResponse(pResponse);

@@ -22,33 +22,21 @@
 
 #ifndef EXAMPLE_OCF_LIGHT_RESOURCE_H_
 #define EXAMPLE_OCF_LIGHT_RESOURCE_H_
+
+#include "octypes.h"
 #include "OCRepresentation.h"
 #include "OCResourceRequest.h"
-#include "main.h"
+
 /**
 * default Resource class, so that we have to define less variables/functions.
 */
-class Resource
-{
-public:
-    /**
-     * destructor
-     */
-    virtual ~Resource() { };
-    
-protected:
-    OCResourceHandle m_resourceHandle;
-    OC::OCRepresentation m_rep;
 
-    /**
-     * Virtual entity handler for this resource. Child classes are responsible
-     * for implementing this function.
-     *
-     * @param request the incoming request to handle
-     *
-     * @return OCEntityHandlerResult OC_EH_OK on success or other result indicating failure.
-     */
-    virtual OCEntityHandlerResult entityHandler(std::shared_ptr<OC::OCResourceRequest> request)=0;
+class Callback
+{
+    public:
+	void post(std::string value);
 };
+
+
 
 #endif /* EXAMPLE_OCF_LIGHT_RESOURCE_H_ */

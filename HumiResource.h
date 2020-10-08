@@ -104,7 +104,7 @@ private:
 
     // resource types and interfaces as array..
     std::string m_resourceUri;
-    std::string m_RESOURCE_TYPE[1]; // rt value (as an array)
+    std::string m_RESOURCE_TYPE[2]; // rt value (as an array)
     std::string m_RESOURCE_INTERFACE[2]; // interface if (as an array)
     std::string m_IF_UPDATE[2]; // updatable interfaces
     OC::ObservationIds m_interestedObservers;

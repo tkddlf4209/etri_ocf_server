@@ -20,8 +20,8 @@
  *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
  */
 
-#ifndef TEMP_H_
-#define TEMP_H_
+#ifndef EXAMPLE_OCF_LIGHT_BINARYSWITCHRESOURCE_H_
+#define EXAMPLE_OCF_LIGHT_BINARYSWITCHRESOURCE_H_
 
 #include <vector>
 #include <string>
@@ -29,45 +29,29 @@
 
 #include "OCApi.h"
 #include "OCRepresentation.h"
-class TempResource : public Resource
+
+/**
+ * Class implements the OCF oic.r.switch.binary resource.
+ *
+ * This class is responsible for handling GET and POST requests sent from
+ * a client
+ */
+class BinarySwitchResource : public Resource
 {
 public:
-    /*
+    /**
      * constructor
      *
      * @param resourceUri the URI the resource will be register with
      */
-    TempResource(std::string resourceUri = "/temperature");
+    BinarySwitchResource(std::string resourceUri = "/binaryswitch");
 
-    /*
+    /**
      * destructor
      */
-    virtual ~TempResource(void);
+    virtual ~BinarySwitchResource(void);
 
-    /*
-     * get the dimmingSetting
-     *
-     * @return the dimmingSetting
-     */
-    double getTemp(void);
-
-    /*
-     * set the dimmingSetting
-     *
-     * @param dimmingSetting a number between 0-100 to set the dimming
-     */
-    void setTemp(double temp);
-
-    /*
-     * Attempt to send out notifications to observing clients.
-     * If no value on the device has been changed the notification
-     * may not be sent.
-     *
-     * @return OC_STACK_OK on success
-     */
-    OCStackResult sendNotification(void);
-
-    /*
+    /**
      * Register the resource with the server
      *
      * setting resourceProperty as OC_DISCOVERABLE will allow Discovery of this resource
@@ -80,22 +64,44 @@ public:
      * @param resourceProperty indicates the property of the resource. Defined in octypes.h.
      */
     OCStackResult registerResource(uint8_t resourceProperty = OC_DISCOVERABLE | OC_OBSERVABLE | OC_SECURE);
+
+    /**
+     * get the value of the binary switch
+     *
+     * @return value of the binary switch
+     */
+    bool getValue(void);
+
+    /**
+     * set the value of the binary switch
+     *
+     * @param newValue new binaryswitch value
+     */
+    void setValue(bool newValue);
+
+    /**
+     * Attempt to send out notifications to observing clients.
+     * If no value on the device has been changed the notification
+     * may not be sent.
+     *
+     * @return OC_STACK_OK on success
+     */
+    OCStackResult sendNotification(void);
+
 private:
 
-    /*
+    /**
      * Make the payload for the retrieve function (e.g. GET)
      *
-     * @param queries  the query parameters for this call
-     *
-     * @return OCRepresentaiton with the dimming resource parameters assigned.
+     * @param queries the query parameters for this call
      */
     OC::OCRepresentation get(OC::QueryParamsMap queries);
 
-    /*
+    /**
      * Parse the payload for the update function (e.g. POST)
      *
-     * @param queries  the query parameters for this call
-     * @param rep  the response to get the property values from
+     * @param queries the query parameters for this call
+     * @param rep the response to get the property values from
      *
      * @return OCEntityHandlerResult OC_EH_OK on success or other result indicating failure.
      */
@@ -105,12 +111,12 @@ private:
     std::string m_resourceUri;
     std::string m_RESOURCE_TYPE[2]; // rt value (as an array)
     std::string m_RESOURCE_INTERFACE[2]; // interface if (as an array)
-    std::string m_IF_UPDATE[2]; // updatable interfaces
+    std::string m_IF_UPDATE[3]; // updateble interfaces
     OC::ObservationIds m_interestedObservers;
 
-    // member variables for path: /dimming
-    double m_var_value_temp; // the value for the attribute
-    std::string m_var_name_temp; // the name for the attribute
+    // member variables for path: /binaryswitch
+    std::vector<std::string>  m_var_value_rt;
+    std::string m_var_name_rt; // the name for the attribute
 
     std::string m_var_value_n; // the value for the attribute
     std::string m_var_name_n; // the name for the attribute
@@ -119,12 +125,11 @@ private:
     std::vector<std::string>  m_var_value_if;
     std::string m_var_name_if; // the name for the attribute
 
-
-    std::vector<std::string>  m_var_value_rt;
-    std::string m_var_name_rt; // the name for the attribute
+    bool m_var_value_value; // the value for the attribute
+    std::string m_var_name_value; // the name for the attribute
 
 protected:
-    /*
+    /**
      * Check if the interface is an updatable interface.
      *
      * @param  interface_name the interface name used during the request
@@ -141,7 +146,7 @@ protected:
         return false;
     }
 
-    /*
+    /**
      * The entity handler for this resource
      *
      * @param request the incoming request to handle
@@ -151,4 +156,4 @@ protected:
     virtual OCEntityHandlerResult entityHandler(std::shared_ptr<OC::OCResourceRequest> request);
 };
 
-#endif /* EXAMPLE_OCF_LIGHT_DIMMINGRESOURCE_H_ */
+#endif /* EXAMPLE_OCF_LIGHT_BINARYSWITCHRESOURCE_H_ */

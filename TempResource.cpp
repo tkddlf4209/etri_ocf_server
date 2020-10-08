@@ -24,7 +24,6 @@
 
 #include "TempResource.h"
 #include "OCPlatform.h"
-
 #define INTERFACE_KEY "if"
 
 using namespace OC;
@@ -42,6 +41,7 @@ TempResource::TempResource(std::string resourceUri):
     // VS2013 will fail list initialization so use array initialization
     m_resourceUri = resourceUri;
     m_RESOURCE_TYPE[0] = "oic.r.temperature";
+    m_RESOURCE_TYPE[1] = "oic.r.agent";
     m_RESOURCE_INTERFACE[0] = "oic.if.baseline";
     m_RESOURCE_INTERFACE[1] = "oic.if.a";
     m_IF_UPDATE[0] = "oic.if.baseline";
@@ -65,6 +65,7 @@ TempResource::~TempResource(void) { }
 
 OCStackResult TempResource::registerResource(uint8_t resourceProperty)
 {
+
     EntityHandler cb = std::bind(&TempResource::entityHandler, this, PH::_1);
     OCStackResult result = OC_STACK_ERROR;
     result = OCPlatform::registerResource(m_resourceHandle,
@@ -173,7 +174,6 @@ OCEntityHandlerResult TempResource::post(OC::QueryParamsMap queries, const OC::O
     if (ehResult == OC_EH_OK)
     {
         // no error: assign the variables
-        
 	try {
             // value exist in payload
             if (rep.getValue(m_var_name_temp, m_var_value_temp ))
@@ -340,7 +340,8 @@ OCEntityHandlerResult TempResource::entityHandler(std::shared_ptr<OC::OCResource
 		    }*/
 
 		    try{
-			ehResult = post(queries, request->getResourceRepresentation());
+			ehResult == OC_EH_OK;
+			//ehResult = post(queries, request->getResourceRepresentation());
 		    }
 		    catch(std::exception& e)
 		    {
